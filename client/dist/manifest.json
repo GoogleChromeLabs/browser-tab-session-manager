@@ -1,0 +1,12 @@
+{
+  "name": "Browser Tab Session Manager",
+  "version": "0.1",
+  "manifest_version": 3,
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "action": {},
+  "permissions": [
+    "webNavigation"
+  ]
+}

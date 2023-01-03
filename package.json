@@ -1,0 +1,34 @@
+{
+  "name": "browser-tab-session-manager",
+  "version": "0.0.1",
+  "description": "Share tab sessions between Chrome instances across devices.",
+  "main": "server/dist/index.js",
+  "type": "module",
+  "scripts": {
+    "buildclient": "cd client && rm -rf dist/src && npx tsc",
+    "buildserver": "cd server && rm -rf dist && npx tsc",
+    "serve": "cd server && rm -rf dist && npx tsc && node dist/index.js",
+    "fix": "eslint --fix './**/*.ts'",
+    "lint": "eslint './**/*.ts'"
+  },
+  "engines": {
+    "node": ">=16",
+    "npm": ">=7"
+  },
+  "author": "",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/GoogleChromeLabs/browser-tab-session-manager/issues"
+  },
+  "dependencies": {
+    "ws": "^8.11.0"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.5.4",
+    "@typescript-eslint/eslint-plugin": "^5.48.0",
+    "@typescript-eslint/parser": "^5.48.0",
+    "eslint": "^8.31.0",
+    "eslint-config-google": "^0.14.0",
+    "typescript": "^4.9.4"
+  }
+}
