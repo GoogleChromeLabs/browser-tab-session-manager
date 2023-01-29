@@ -49,6 +49,8 @@ encryption involved.
 
 ## Installing and building BTSM
 
+The build scripts currently only work on Linux.
+
 [Node](https://nodejs.org/) v16 or v17 (with [NPM](https://www.npmjs.com/) v7 or
 v8, respectively) are used by BTSM for dependency management, and have to
 be available on the host operating system. The recommended way to install these
@@ -63,6 +65,7 @@ nvm install node
 Then check out this repository and initialize your environment by running:
 
 ```bash
+pushd client; npm install; popd
 npm install
 ```
 

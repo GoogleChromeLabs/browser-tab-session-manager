@@ -14,14 +14,20 @@
  *  limitations under the License.
  */
 
-// TODO: get proper types
-declare let chrome: any;
-declare let WebSocket: any;
+import * as p from '../../proto/test.cjs';
 
 chrome.webNavigation.onCompleted.addListener(async (details: any) => {
   const ws = new WebSocket('ws://localhost:8080');
-  ws.onmessage = (msg: any) => {
-    console.log(`received message: "${msg.data}"`);
+  ws.onmessage = (e) => {
+    console.log(`received message: "${e.data}"`);
+    const msg = p.TestResponse.fromObject(JSON.parse(e.data.toString()));
+    console.log(`reply=${msg.reply}`);
   };
-  ws.onopen = () => ws.send(`navigated to (${details.url})`);
+
+  ws.onopen = () => {
+    const msg = p.TestRequest.create({
+      msg: 'hello',
+    });
+    ws.send(JSON.stringify(msg.toJSON()));
+  };
 });

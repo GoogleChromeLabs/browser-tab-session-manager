@@ -6,13 +6,14 @@
     "esModuleInterop": false,
     "noEmitOnError": true,
     "lib": [
-      "esnext",
+      "dom",
+      "esnext"
     ],
     "experimentalDecorators": true,
     "strict": true,
     "baseUrl": "src",
     "rootDir": "src",
-    "outDir": "dist/src"
+    "outDir": "prebrowserify"
   },
   "include": ["src/**/*.ts"]
 }

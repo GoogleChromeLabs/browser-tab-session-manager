@@ -6,7 +6,7 @@
     "esModuleInterop": false,
     "noEmitOnError": true,
     "lib": [
-      "esnext",
+      "esnext"
     ],
     "experimentalDecorators": true,
     "strict": true,

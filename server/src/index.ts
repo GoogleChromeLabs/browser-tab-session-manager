@@ -15,12 +15,19 @@
  */
 
 import { WebSocketServer } from 'ws';
+import * as p from '../../proto/test.cjs';
 
 const wss = new WebSocketServer({ host: 'localhost', port: 8080 });
 
 wss.on('connection', (ws) => {
   ws.on('message', (data) => {
     console.log(`received message: '${data}'`);
-    ws.send(`'${data}' ACK`);
+    const msg = p.TestRequest.fromObject(JSON.parse(data.toString()));
+    console.log(`msg=${msg.msg}`);
+
+    const reply = p.TestResponse.create({
+      reply: 'world',
+    });
+    ws.send(JSON.stringify(reply.toJSON()));
   });
 });

@@ -2,15 +2,9 @@
   "name": "browser-tab-session-manager",
   "version": "0.0.1",
   "description": "Share tab sessions between Chrome instances across devices.",
-  "main": "server/dist/index.js",
   "type": "module",
   "scripts": {
-    "buildclient": "./buildclient.sh",
-    "buildproto": "./buildproto.sh",
-    "buildserver": "./buildserver.sh",
-    "fix": "eslint --fix './**/*.ts'",
-    "lint": "eslint './**/*.ts'",
-    "serve": "./serve.sh"
+    "build": "../buildclient.sh"
   },
   "engines": {
     "node": ">=16",
@@ -22,11 +16,10 @@
     "url": "https://github.com/GoogleChromeLabs/browser-tab-session-manager/issues"
   },
   "dependencies": {
-    "protobufjs": "^7.1.2",
-    "ws": "^8.11.0"
+    "protobufjs": "^7.1.2"
   },
   "devDependencies": {
-    "@types/ws": "^8.5.4",
+    "@types/chrome": "^0.0.206",
     "@typescript-eslint/eslint-plugin": "^5.48.0",
     "@typescript-eslint/parser": "^5.48.0",
     "browserify": "^17.0.0",
