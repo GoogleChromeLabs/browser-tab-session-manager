@@ -13,26 +13,24 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
+ 
+ syntax = "proto3";
 
-import * as rpcpb from '../../proto/rpc.cjs';
+message Session {
+    enum SessionType {
+        SESSION_TYPE_UNSPECIFIED = 0;
+        SESSION_TYPE_WINDOW = 1;
+        SESSION_TYPE_TAB_GROUP = 2;
+    }
+    SessionType session_type = 1;
 
-chrome.webNavigation.onCompleted.addListener(async (details) => {
-  const ws = new WebSocket('ws://localhost:8080');
-  ws.onmessage = (e) => {
-    console.log(`received message: "${e.data}"`);
-    const msg = rpcpb.RPC.fromObject(JSON.parse(e.data.toString()));
-    console.log('response=');
-    console.log(msg.response);
-  };
+    int32 id = 2;
+    string name = 3;
+    repeated Tab tabs = 4;
+}
 
-  ws.onopen = () => {
-    const msg = rpcpb.RPC.create({
-      request: {
-        navigationRequest: {
-          url: details.url,
-        },
-      },
-    });
-    ws.send(JSON.stringify(msg.toJSON()));
-  };
-});
+message Tab {
+    int32 id = 1;
+    string url = 2;
+    int32 session_id = 3;
+}

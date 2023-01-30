@@ -1,0 +1,113 @@
+/*
+ * Copyright 2023 Google Inc. All Rights Reserved.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+syntax = "proto3";
+
+import "session.proto";
+
+message RPC {
+    int32 message_id = 1;
+    string auth_token = 2;
+    oneof msg {
+        Request request = 3;
+        Response response = 4;
+    }
+}
+
+message Request {
+    int32 request_id = 1;
+    oneof req {
+        ListSessionsRequest list_sessions_request = 2;
+        ConnectToSessionRequest connect_to_session_request = 3;
+        DisconnectFromSessionRequest disconnect_from_session_request = 4;
+        SendStateRequest send_state_request = 5;
+        OpenTabRequest open_tab_request = 6;
+        CloseTabRequest close_tab_request = 7;
+        CreateSessionRequest create_session_request = 8;
+        NavigationRequest navigation_request = 9;
+    }
+}
+
+message Response {
+    int32 response_id = 1;
+
+    enum ErrorCode {
+        ERROR_CODE_UNSPECIFIED = 0;
+        ERROR_CODE_SUCCESS = 1;
+    }
+    ErrorCode error_code = 2;
+
+    string error_msg = 3;
+    oneof resp {
+        ListSessionsResponse list_sessions_response = 4;
+        ConnectToSessionResponse connect_to_session_response = 5;
+        DisconnectFromSessionResponse disconnect_from_session_response = 6;
+        SendStateResponse send_state_response = 7;
+        OpenTabResponse open_tab_response = 8;
+        CloseTabResponse close_tab_response = 9;
+        CreateSessionResponse create_session_response = 10;
+        NavigationResponse navigation_response = 11;
+    }
+}
+
+message ListSessionsRequest {}
+message ListSessionsResponse {
+    repeated Session sessions = 1;
+}
+
+message ConnectToSessionRequest {
+    int32 id = 1;
+}
+message ConnectToSessionResponse {
+    Session session = 1;
+}
+
+message DisconnectFromSessionRequest {
+    int32 id = 1;
+}
+message DisconnectFromSessionResponse {}
+
+message SendStateRequest {
+    Session session = 1;
+}
+message SendStateResponse {}
+
+message OpenTabRequest {
+    int32 session_id = 1;
+}
+message OpenTabResponse {
+    Tab tab = 1;
+}
+
+message CloseTabRequest {
+    int32 session_id = 1;
+    int32 tab_id = 2;
+}
+message CloseTabResponse {}
+
+message CreateSessionRequest {
+    Session.SessionType session_type = 1;
+}
+message CreateSessionResponse {
+    Session session = 1;
+}
+
+message NavigationRequest {
+    int32 session_id = 1;
+    int32 tab_id = 2;
+    string url = 3;
+}
+message NavigationResponse {}

@@ -15,18 +15,21 @@
  */
 
 import { WebSocketServer } from 'ws';
-import * as p from '../../proto/test.cjs';
+import * as rpcpb from '../../proto/rpc.cjs';
 
 const wss = new WebSocketServer({ host: 'localhost', port: 8080 });
 
 wss.on('connection', (ws) => {
   ws.on('message', (data) => {
     console.log(`received message: '${data}'`);
-    const msg = p.TestRequest.fromObject(JSON.parse(data.toString()));
-    console.log(`msg=${msg.msg}`);
+    const msg = rpcpb.RPC.fromObject(JSON.parse(data.toString()));
+    console.log('request=');
+    console.log(msg.request);
 
-    const reply = p.TestResponse.create({
-      reply: 'world',
+    const reply = rpcpb.RPC.create({
+      response: {
+        navigationResponse: {},
+      },
     });
     ws.send(JSON.stringify(reply.toJSON()));
   });
