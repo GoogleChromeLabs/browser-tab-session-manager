@@ -14,25 +14,8 @@
  *  limitations under the License.
  */
 
-import * as rpcpb from '../../proto/rpc.cjs';
+import { Client } from './client';
 
-chrome.webNavigation.onCompleted.addListener(async (details) => {
-  const ws = new WebSocket('ws://localhost:8080');
-  ws.onmessage = (e) => {
-    console.log(`received message: "${e.data}"`);
-    const msg = rpcpb.RPC.fromObject(JSON.parse(e.data.toString()));
-    console.log('response=');
-    console.log(msg.response);
-  };
+const client = Client.instance();
 
-  ws.onopen = () => {
-    const msg = rpcpb.RPC.create({
-      request: {
-        navigationRequest: {
-          url: details.url,
-        },
-      },
-    });
-    ws.send(JSON.stringify(msg.toJSON()));
-  };
-});
+chrome.webNavigation.onCompleted.addListener(client.onNavigation.bind(client));

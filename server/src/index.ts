@@ -14,23 +14,6 @@
  *  limitations under the License.
  */
 
-import { WebSocketServer } from 'ws';
-import * as rpcpb from '../../proto/rpc.cjs';
+import { Server } from './server.js';
 
-const wss = new WebSocketServer({ host: 'localhost', port: 8080 });
-
-wss.on('connection', (ws) => {
-  ws.on('message', (data) => {
-    console.log(`received message: '${data}'`);
-    const msg = rpcpb.RPC.fromObject(JSON.parse(data.toString()));
-    console.log('request=');
-    console.log(msg.request);
-
-    const reply = rpcpb.RPC.create({
-      response: {
-        navigationResponse: {},
-      },
-    });
-    ws.send(JSON.stringify(reply.toJSON()));
-  });
-});
+Server.instance();

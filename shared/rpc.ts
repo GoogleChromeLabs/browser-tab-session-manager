@@ -20,6 +20,7 @@ import * as rpcpb from '../../../proto/rpc.cjs';
  * An object that handles incoming RPC requests.
  */
 export interface RpcHandler {
+  setResponder(responder: Responder): void;
   handleListSessionsRequest(req: rpcpb.IRequest, subReq: rpcpb.IListSessionsRequest): void;
   handleConnectToSessionRequest(req: rpcpb.IRequest, subReq: rpcpb.IConnectToSessionRequest): void;
   handleDisconnectFromSessionRequest(req: rpcpb.IRequest,
@@ -44,6 +45,13 @@ export interface AbstractWebSocket {
 }
 
 /**
+ * An object that knows how to send response RPCs (like |Rpc| below).
+ */
+export interface Responder {
+  sendResponse(msg: rpcpb.IResponse): void;
+}
+
+/**
  * Function to call when we receive a response.
  */
 type ResponseCallback = (resp: rpcpb.IResponse, subResp: any) => void;
@@ -62,7 +70,7 @@ type AwaitedResponse = {
  * Rpc handles sending and receiving messages between the client and server, including matching up
  * message types with their corresponding handler and callback functions.
  */
-export class Rpc {
+export class Rpc implements Responder {
   // Note: |awaitedResponses| is a sparse array.
   private awaitedResponses: AwaitedResponse[] = [];
   private messageId: number = 0;
@@ -80,6 +88,8 @@ export class Rpc {
   constructor(handler: RpcHandler, ws: AbstractWebSocket) {
     this.handler = handler;
     this.ws = ws;
+
+    handler.setResponder(this);
 
     ws.onMessage((data: any): any => {
       const msg: rpcpb.RPC = rpcpb.RPC.fromObject(JSON.parse(data.toString()));
