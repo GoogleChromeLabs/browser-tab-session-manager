@@ -1,5 +1,7 @@
 # Browser Tab Session Manager
 
+![NodeJS CI](https://github.com/GoogleChromeLabs/browser-tab-session-manager/actions/workflows/build.yml/badge.svg?event=push)
+
 **This is not an officially supported Google product**
 
 Browser Tab Session Manager (BTSM) aims to allow Chrome users to share their

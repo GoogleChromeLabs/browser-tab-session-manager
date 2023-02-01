@@ -1,0 +1,42 @@
+name: NodeJS
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        # We want to support the current version and the latest LTS version.
+        node-version: [16.x, 17.x]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install client dependencies
+      run: cd client && npm ci
+
+    - name: Lint
+      run: npm run lint
+
+    - name: Build Client
+      run: npm run buildclient
+
+    - name: Build Server
+      run: npm run buildserver
+
+    - name: Archive npm failure logs
+      uses: actions/upload-artifact@v2
+      if: failure()
+      with:
+        name: npm-logs
+        path: ~/.npm/_logs
