@@ -19,3 +19,12 @@ import { Client } from './client';
 const client = Client.instance();
 
 chrome.webNavigation.onCompleted.addListener(client.onNavigation.bind(client));
+
+chrome.tabs.onCreated.addListener(client.onTabCreated.bind(client));
+chrome.tabs.onAttached.addListener(client.onTabAttached.bind(client));
+chrome.tabs.onDetached.addListener(client.onTabDetached.bind(client));
+chrome.tabs.onRemoved.addListener(client.onTabRemoved.bind(client));
+chrome.tabs.onMoved.addListener(client.onTabMoved.bind(client));
+chrome.tabs.onReplaced.addListener(client.onTabReplaced.bind(client));
+
+chrome.runtime.onMessage.addListener(client.onMessage.bind(client));

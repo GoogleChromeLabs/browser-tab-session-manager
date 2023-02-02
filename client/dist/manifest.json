@@ -5,8 +5,9 @@
   "background": {
     "service_worker": "src/background.js"
   },
-  "action": {},
+  "action": {"default_popup": "popup.html"},
   "permissions": [
-    "webNavigation"
+    "webNavigation",
+    "tabs"
   ]
 }
