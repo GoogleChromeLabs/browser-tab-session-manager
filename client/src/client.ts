@@ -22,6 +22,14 @@ import { Handler } from './rpc_handler.js';
 import { ClientWebSocket } from './cws.js';
 
 /**
+ * A session proto object plus the corresponding server.
+ */
+type Session = {
+  impl: spb.ISession;
+  server: Rpc;
+};
+
+/**
  * Singleton class to deal with basically the entire job of being a client (owns RPC connections,
  * etc).
  */
@@ -29,6 +37,12 @@ export class Client {
   private static singleton?: Client;
 
   private server?: Rpc;
+
+  // Sparse array of session ID -> session
+  private sessions: Session[] = [];
+
+  // Sparse array of window ID -> session
+  private windows: Session[] = [];
 
   /**
    * Creates a Client.
@@ -60,6 +74,15 @@ export class Client {
     const windowId = (await chrome.windows.getCurrent()).id;
 
     console.log(`tab created (tab ${tab.id}, window ${windowId})`);
+
+    // TODO: don't do this if the window isn't connected to a session
+    const req = rpcpb.Request.create({
+      openTabRequest: {
+        sessionId: this.windows[windowId!].impl.id,
+      },
+    });
+    // TODO: here and maybe elsewhere, ignore when tab ID is chrome.tabs.TAB_ID_NONE
+    this.server!.sendRequest(req, null);
   }
 
   /**
@@ -112,6 +135,14 @@ export class Client {
 
     console.log(`tab removed (tab ${tabId}, window ${windowId}) - isWindowClosing: ` +
       `${removeInfo.isWindowClosing}`);
+
+    const req = rpcpb.Request.create({
+      closeTabRequest: {
+        sessionId: this.windows[windowId!].impl.id,
+        tabId: tabId,
+      },
+    });
+    this.server!.sendRequest(req, null);
   }
 
   /**
@@ -148,11 +179,15 @@ export class Client {
    * @param {any} msg The message sent from the popup window.
    */
   async onMessage(msg: any) {
+    const windowId = (await chrome.windows.getCurrent()).id;
+
     switch (msg.type) {
       case 'list':
         this.server!.sendRequest(rpcpb.Request.create({
           listSessionsRequest: {},
-        }), null);
+        }), (resp: rpcpb.IResponse, subResp: rpcpb.IListSessionsResponse) => {
+          console.log(`list response: ${resp}`);
+        });
         break;
 
       case 'create':
@@ -160,7 +195,7 @@ export class Client {
           createSessionRequest: {
             sessionType: spb.Session.SessionType.SESSION_TYPE_WINDOW,
           },
-        }), null);
+        }), (resp, subResp) => this.onCreateSessionResponse(resp, subResp, windowId!));
         break;
 
       case 'conn':
@@ -168,15 +203,21 @@ export class Client {
           connectToSessionRequest: {
             id: msg.id,
           },
-        }), null);
+        }), (resp, subResp) => this.onConnectToSessionResponse(resp, subResp, windowId!));
         break;
 
       case 'disconn':
+        const id = this.windows[windowId!].impl.id;
         this.server!.sendRequest(rpcpb.Request.create({
           disconnectFromSessionRequest: {
-            id: 1234, // TODO: use a real session id
+            id: id,
           },
         }), null);
+        delete this.windows[windowId!];
+
+        // TODO: we shouldn't actually delete the session if there are other windows still
+        // connected to it
+        delete this.sessions[id!];
         break;
     }
   }
@@ -199,5 +240,72 @@ export class Client {
     this.server!.sendRequest(req, (resp: rpcpb.IResponse, subResp: rpcpb.INavigationResponse) => {
       console.log(`in navigationRequest callback ${resp.responseId} with resp ${subResp}`);
     });
+  }
+
+  /**
+   * Called upon receipt of a CreateSessionResponse from the server. Sets up client-side
+   * bookkeeping and triggers a new SendStateRequest to the server.
+   *
+   * @param {rpcpb.IResponse} resp Full response proto.
+   * @param {rpcpb.ICreateSessionResponse} subResp CreateSessionResponse proto.
+   * @param {number} windowId The ID of the window that initiated the session creation.
+   */
+  private async onCreateSessionResponse(resp: rpcpb.IResponse,
+      subResp: rpcpb.ICreateSessionResponse, windowId: number) {
+    console.log(`createSession response: ${resp}`);
+
+    this.windows[windowId!] = {
+      impl: subResp.session!,
+      server: this.server!,
+    };
+    this.sessions[subResp.session!.id!] = this.windows[windowId!];
+
+    const tabs = await chrome.tabs.query({});
+    const req = rpcpb.Request.create({
+      sendStateRequest: {
+        session: {
+          sessionType: spb.Session.SessionType.SESSION_TYPE_WINDOW,
+          id: subResp.session!.id,
+          tabs: tabs.map((tab) => {
+            return spb.Tab.create({
+              id: tab.id,
+              url: tab.url,
+              sessionId: subResp.session!.id,
+            });
+          }),
+        },
+      },
+    });
+
+    this.server!.sendRequest(req, null);
+  }
+
+  /**
+   * Called upon receipt of a ConnectToSession response from the server. Sets up client-side
+   * bookkeeping and opens all the tabs sent from the server in the newly-connected window.
+   *
+   * @todo This should not just blindly open all the tabs, but instead send a SendStateRequest
+   * and merge the current window's state with the server state.
+   *
+   * @param {rpcpb.IResponse} resp Full response proto.
+   * @param {rpcpb.IConnectToSessionResponse} subResp ConnectToSessionResponse
+   * @param {number} windowId ID of the window that just connected to the session.
+   */
+  private onConnectToSessionResponse(resp: rpcpb.IResponse,
+      subResp: rpcpb.IConnectToSessionResponse, windowId: number) {
+    console.log(`connectToSession response: ${resp}`);
+
+    this.windows[windowId] = {
+      impl: subResp.session!,
+      server: this.server!,
+    };
+    this.sessions[subResp.session!.id!] = this.windows[windowId];
+
+    for (const t of subResp.session!.tabs!) {
+      chrome.tabs.create({
+        url: t.url!,
+        windowId: windowId,
+      });
+    }
   }
 }

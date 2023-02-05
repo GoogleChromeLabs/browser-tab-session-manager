@@ -42,12 +42,20 @@ same time.
 
 ## Current state
 
-Just a bare-bones outline for now. There's a server that just listens for
-WebSocket connections and responds to them, and there's a Chrome extension that
-sends a WebSocket message on every navigation.
+Fairly bare-bones protocol outline for now. Basic RPC infrastructure is in
+place and working, and some accounting for which sessions exist, which clients
+and windows belong to which sessions, etc. Little to no error handling.
 
-They are both hardcoded to use localhost only, and there's no authentication or
-encryption involved.
+The client and server both know how to receive and log requests, and respond to
+some of them, but implementation is incomplete in almost all cases.
+
+Creating a session in one window, then connecting to it in another window
+results in the 2nd window opening all the same tabs as the original window. No
+attempt is made at merging the two states yet, and after the initial
+connection, the two windows don't affect each other anymore.
+
+Both client and server are still hardcoded to use localhost only, and there's
+no authentication or encryption involved.
 
 ## Installing and building BTSM
 
