@@ -18,6 +18,7 @@ import { WebSocketServer } from 'ws';
 
 import * as spb from '../../proto/session.cjs';
 
+import { log } from './shared/logger.js';
 import { Rpc } from './shared/rpc.js';
 import { Handler } from './rpc_handler.js';
 import { ServerWebSocket } from './sws.js';
@@ -48,11 +49,11 @@ export class Server {
    * Creates a Server.
    */
   private constructor() {
-    console.log('constructed');
+    log.debug('constructed');
     this.wss.on('connection', (ws) => {
       this.clientId++;
       const client = new Rpc(new Handler(this.clientId, this), new ServerWebSocket(ws));
-      console.log('connected');
+      log.debug('connected');
       this.clients[this.clientId] = client;
     });
   }

@@ -17,6 +17,7 @@
 import * as rpcpb from '../../proto/rpc.cjs';
 import * as spb from '../../proto/session.cjs';
 
+import { log } from './shared/logger.js';
 import { Responder, RpcHandler } from './shared/rpc.js';
 
 /**
@@ -67,9 +68,9 @@ export class Handler implements RpcHandler {
    * @param {rpcpb.IListSessionsRequest} subReq The IListSessionsRequest.
    */
   handleListSessionsRequest(req: rpcpb.IRequest, subReq: rpcpb.IListSessionsRequest) {
-    console.log(`received handleListSessionsRequest message: '${subReq}'`);
+    log.debug(`received handleListSessionsRequest message: `, subReq);
     const sessions = this.server.listSessions();
-    console.log(sessions);
+    log.debug(`sessions: `, sessions);
     const resp = rpcpb.Response.create({
       responseId: req.requestId,
       listSessionsResponse: {
@@ -86,7 +87,7 @@ export class Handler implements RpcHandler {
    * @param {rpcpb.IConnectToSessionRequest} subReq The IConnectToSessionRequest.
    */
   handleConnectToSessionRequest(req: rpcpb.IRequest, subReq: rpcpb.IConnectToSessionRequest) {
-    console.log(`received handleConnectToSessionRequest message: '${subReq}'`);
+    log.debug(`received handleConnectToSessionRequest message: `, subReq);
 
     const session = this.server.connectToSession(this.clientId, subReq.id!);
     const resp = rpcpb.Response.create({
@@ -106,9 +107,14 @@ export class Handler implements RpcHandler {
    */
   handleDisconnectFromSessionRequest(req: rpcpb.IRequest,
       subReq: rpcpb.IDisconnectFromSessionRequest) {
-    console.log(`received handleDisconnectFromSessionRequest message: '${subReq}'`);
+    log.debug(`received handleDisconnectFromSessionRequest message: `, subReq);
 
     this.server.disconnectFromSession(this.clientId, subReq.id!);
+    const resp = rpcpb.Response.create({
+      responseId: req.requestId,
+      disconnectFromSessionResponse: {},
+    });
+    this.responder!.sendResponse(resp);
   }
 
   /**
@@ -118,7 +124,7 @@ export class Handler implements RpcHandler {
    * @param {rpcpb.ISendStateRequest} subReq The ISendStateRequest.
    */
   handleSendStateRequest(req: rpcpb.IRequest, subReq: rpcpb.ISendStateRequest) {
-    console.log(`received handleSendStateRequest message: '${subReq}'`);
+    log.debug(`received handleSendStateRequest message: `, subReq);
     this.server.mergeSession(subReq.session!);
   }
 
@@ -129,7 +135,7 @@ export class Handler implements RpcHandler {
    * @param {rpcpb.IOpenTabRequest} subReq The IOpenTabRequest.
    */
   handleOpenTabRequest(req: rpcpb.IRequest, subReq: rpcpb.IOpenTabRequest) {
-    console.log(`received handleOpenTabRequest message: '${subReq}'`);
+    log.debug(`received handleOpenTabRequest message: `, subReq);
 
     const tab = this.server.openTab(subReq.sessionId!);
     const resp = rpcpb.Response.create({
@@ -148,7 +154,7 @@ export class Handler implements RpcHandler {
    * @param {rpcpb.ICloseTabRequest} subReq The ICloseTabRequest.
    */
   handleCloseTabRequest(req: rpcpb.IRequest, subReq: rpcpb.ICloseTabRequest) {
-    console.log(`received handleCloseTabRequest message: '${subReq}'`);
+    log.debug(`received handleCloseTabRequest message: `, subReq);
 
     this.server.closeTab(subReq.sessionId!, subReq.tabId!);
     const resp = rpcpb.Response.create({
@@ -165,7 +171,7 @@ export class Handler implements RpcHandler {
    * @param {rpcpb.ICreateSessionRequest} subReq The ICreateSessionRequest.
    */
   handleCreateSessionRequest(req: rpcpb.IRequest, subReq: rpcpb.ICreateSessionRequest) {
-    console.log(`received handleCreateSessionRequest message: '${subReq}'`);
+    log.debug(`received handleCreateSessionRequest message: `, subReq);
 
     const session = this.server.createSession(this.clientId, subReq.sessionType!);
     const resp = rpcpb.Response.create({
@@ -184,7 +190,7 @@ export class Handler implements RpcHandler {
    * @param {rpcpb.INavigationRequest} subReq The INavigationRequest.
    */
   handleNavigationRequest(req: rpcpb.IRequest, subReq: rpcpb.INavigationRequest) {
-    console.log(`received handleNavigationRequest message: '${subReq.url}'`);
+    log.debug(`received handleNavigationRequest message: '${subReq.url}'`);
     const resp = rpcpb.Response.create({
       responseId: req.requestId,
       navigationResponse: {},

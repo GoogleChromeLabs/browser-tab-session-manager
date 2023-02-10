@@ -14,7 +14,20 @@
  *  limitations under the License.
  */
 
+import { createLogger, format, transports } from 'winston';
+
+import { setLogger, pretty } from './shared/logger.js';
 import { Client } from './client';
+
+setLogger(createLogger({
+  level: 'debug',
+  transports: [
+    new transports.Console(),
+  ],
+  format: format.combine(
+      pretty(2 /* depth */, true /* colourize */, true /* showHidden */, 100 /* breakLength */),
+  ),
+}));
 
 const client = Client.instance();
 

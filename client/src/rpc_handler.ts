@@ -16,6 +16,7 @@
 
 import * as rpcpb from '../../proto/rpc.cjs';
 
+import { log } from './shared/logger.js';
 import { Responder, RpcHandler } from './shared/rpc.js';
 
 /**
@@ -40,7 +41,7 @@ export class Handler implements RpcHandler {
    * @param {rpcpb.IListSessionsRequest} subReq The IListSessionsRequest.
    */
   handleListSessionsRequest(req: rpcpb.IRequest, subReq: rpcpb.IListSessionsRequest) {
-    console.log(`received handleListSessionsRequest message: '${subReq}'`);
+    log.error(`received handleListSessionsRequest message: `, subReq);
     throw new Error('ListSessionsRequest unimplemented on client');
   }
 
@@ -51,7 +52,7 @@ export class Handler implements RpcHandler {
    * @param {rpcpb.IConnectToSessionRequest} subReq The IConnectToSessionRequest.
    */
   handleConnectToSessionRequest(req: rpcpb.IRequest, subReq: rpcpb.IConnectToSessionRequest) {
-    console.log(`received handleConnectToSessionRequest message: '${subReq}'`);
+    log.error(`received handleConnectToSessionRequest message: `, subReq);
     throw new Error('ConnectToSessionRequest unimplemented on client');
   }
 
@@ -63,7 +64,7 @@ export class Handler implements RpcHandler {
    */
   handleDisconnectFromSessionRequest(req: rpcpb.IRequest,
       subReq: rpcpb.IDisconnectFromSessionRequest) {
-    console.log(`received handleDisconnectFromSessionRequest message: '${subReq}'`);
+    log.error(`received handleDisconnectFromSessionRequest message: `, subReq);
     throw new Error('DisconnectFromSessionRequest unimplemented on client');
   }
 
@@ -74,7 +75,7 @@ export class Handler implements RpcHandler {
    * @param {rpcpb.ISendStateRequest} subReq The ISendStateRequest.
    */
   handleSendStateRequest(req: rpcpb.IRequest, subReq: rpcpb.ISendStateRequest) {
-    console.log(`received handleSendStateRequest message: '${subReq}'`);
+    log.debug(`received handleSendStateRequest message: `, subReq);
   }
 
   /**
@@ -84,7 +85,7 @@ export class Handler implements RpcHandler {
    * @param {rpcpb.IOpenTabRequest} subReq The IOpenTabRequest.
    */
   handleOpenTabRequest(req: rpcpb.IRequest, subReq: rpcpb.IOpenTabRequest) {
-    console.log(`received handleOpenTabRequest message: '${subReq}'`);
+    log.debug(`received handleOpenTabRequest message: `, subReq);
   }
 
   /**
@@ -94,7 +95,7 @@ export class Handler implements RpcHandler {
    * @param {rpcpb.ICloseTabRequest} subReq The ICloseTabRequest.
    */
   handleCloseTabRequest(req: rpcpb.IRequest, subReq: rpcpb.ICloseTabRequest) {
-    console.log(`received handleCloseTabRequest message: '${subReq}'`);
+    log.debug(`received handleCloseTabRequest message: `, subReq);
   }
 
   /**
@@ -104,7 +105,7 @@ export class Handler implements RpcHandler {
    * @param {rpcpb.ICreateSessionRequest} subReq The ICreateSessionRequest.
    */
   handleCreateSessionRequest(req: rpcpb.IRequest, subReq: rpcpb.ICreateSessionRequest) {
-    console.log(`received handleCreateSessionRequest message: '${subReq}'`);
+    log.error(`received handleCreateSessionRequest message: `, subReq);
     throw new Error('CreateSessionsRequest unimplemented on client');
   }
 
@@ -115,6 +116,6 @@ export class Handler implements RpcHandler {
    * @param {rpcpb.INavigationRequest} subReq The INavigationRequest.
    */
   handleNavigationRequest(req: rpcpb.IRequest, subReq: rpcpb.INavigationRequest) {
-    console.log(`received handleNavigationRequest message: '${subReq}'`);
+    log.debug(`received handleNavigationRequest message: `, subReq);
   }
 }

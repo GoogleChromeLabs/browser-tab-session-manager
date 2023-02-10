@@ -17,6 +17,7 @@
 import * as rpcpb from '../../proto/rpc.cjs';
 import * as spb from '../../proto/session.cjs';
 
+import { log } from './shared/logger.js';
 import { Rpc } from './shared/rpc.js';
 import { Handler } from './rpc_handler.js';
 import { ClientWebSocket } from './cws.js';
@@ -73,7 +74,7 @@ export class Client {
   async onTabCreated(tab: chrome.tabs.Tab) {
     const windowId = (await chrome.windows.getCurrent()).id;
 
-    console.log(`tab created (tab ${tab.id}, window ${windowId})`);
+    log.debug(`tab created (tab ${tab.id}, window ${windowId})`);
 
     // TODO: don't do this if the window isn't connected to a session
     const req = rpcpb.Request.create({
@@ -94,7 +95,7 @@ export class Client {
   async onTabAttached(tabId: number, attachInfo: chrome.tabs.TabAttachInfo) {
     const windowId = (await chrome.windows.getCurrent()).id;
 
-    console.log(`tab attached at position ${attachInfo.newPosition} (tab ${tabId}, window ` +
+    log.debug(`tab attached at position ${attachInfo.newPosition} (tab ${tabId}, window ` +
       `${windowId} =? ${attachInfo.newWindowId})`);
 
     // In this case we may need to send both 'created' and 'navigated' events to the server? Or
@@ -113,7 +114,7 @@ export class Client {
   async onTabDetached(tabId: number, detachInfo: chrome.tabs.TabDetachInfo) {
     const windowId = (await chrome.windows.getCurrent()).id;
 
-    console.log(`tab detached (tab ${tabId}, window ${windowId})`);
+    log.debug(`tab detached (tab ${tabId}, window ${windowId})`);
 
     // Detaching from a window will mean being removed from the session.
     this.onTabRemoved(tabId, {
@@ -133,7 +134,7 @@ export class Client {
 
     // If removeInfo.isWindowClosing is true, then we would want to delete the session.
 
-    console.log(`tab removed (tab ${tabId}, window ${windowId}) - isWindowClosing: ` +
+    log.debug(`tab removed (tab ${tabId}, window ${windowId}) - isWindowClosing: ` +
       `${removeInfo.isWindowClosing}`);
 
     const req = rpcpb.Request.create({
@@ -154,7 +155,7 @@ export class Client {
   async onTabMoved(tabId: number, moveInfo: chrome.tabs.TabMoveInfo) {
     const windowId = (await chrome.windows.getCurrent()).id;
 
-    console.log(`tab moved (tab ${tabId}, window ${windowId} =? ${moveInfo.windowId}) - from ` +
+    log.debug(`tab moved (tab ${tabId}, window ${windowId} =? ${moveInfo.windowId}) - from ` +
       `index ${moveInfo.fromIndex}, to index ${moveInfo.toIndex}`);
   }
 
@@ -168,7 +169,7 @@ export class Client {
   async onTabReplaced(addedTabId: number, removedTabId: number) {
     const windowId = (await chrome.windows.getCurrent()).id;
 
-    console.log(`tab replaced (old tab ${removedTabId}, new tab ${addedTabId}, ` +
+    log.debug(`tab replaced (old tab ${removedTabId}, new tab ${addedTabId}, ` +
       `window ${windowId})`);
   }
 
@@ -186,7 +187,7 @@ export class Client {
         this.server!.sendRequest(rpcpb.Request.create({
           listSessionsRequest: {},
         }), (resp: rpcpb.IResponse, subResp: rpcpb.IListSessionsResponse) => {
-          console.log(`list response: ${resp}`);
+          log.debug(`list response: `, resp);
         });
         break;
 
@@ -212,7 +213,9 @@ export class Client {
           disconnectFromSessionRequest: {
             id: id,
           },
-        }), null);
+        }), (resp: rpcpb.IResponse, subResp: rpcpb.IDisconnectFromSessionResponse) => {
+          log.debug(`disconnect response: `, resp);
+        });
         delete this.windows[windowId!];
 
         // TODO: we shouldn't actually delete the session if there are other windows still
@@ -231,14 +234,14 @@ export class Client {
   async onNavigation(details: chrome.webNavigation.WebNavigationFramedCallbackDetails) {
     const windowId = (await chrome.windows.getCurrent()).id;
 
-    console.log(`completed nav (window ${windowId})`);
+    log.debug(`completed nav (window ${windowId})`);
     const req = rpcpb.Request.create({
       navigationRequest: {
         url: details.url,
       },
     });
     this.server!.sendRequest(req, (resp: rpcpb.IResponse, subResp: rpcpb.INavigationResponse) => {
-      console.log(`in navigationRequest callback ${resp.responseId} with resp ${subResp}`);
+      log.debug(`in navigationRequest callback ${resp.responseId} with resp `, subResp);
     });
   }
 
@@ -252,7 +255,7 @@ export class Client {
    */
   private async onCreateSessionResponse(resp: rpcpb.IResponse,
       subResp: rpcpb.ICreateSessionResponse, windowId: number) {
-    console.log(`createSession response: ${resp}`);
+    log.debug(`createSession response: `, resp);
 
     this.windows[windowId!] = {
       impl: subResp.session!,
@@ -293,7 +296,7 @@ export class Client {
    */
   private onConnectToSessionResponse(resp: rpcpb.IResponse,
       subResp: rpcpb.IConnectToSessionResponse, windowId: number) {
-    console.log(`connectToSession response: ${resp}`);
+    log.debug(`connectToSession response: `, resp);
 
     this.windows[windowId] = {
       impl: subResp.session!,

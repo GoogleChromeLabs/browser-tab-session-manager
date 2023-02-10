@@ -16,6 +16,8 @@
 
 import * as rpcpb from '../../../proto/rpc.cjs';
 
+import { log } from './logger.js';
+
 /**
  * An object that handles incoming RPC requests.
  */
@@ -99,16 +101,16 @@ export class Rpc implements Responder {
       } else if (msg.response) {
         this.handleResponse(msg.response);
       } else {
-        console.log('msg.* undefined');
+        log.error('msg.* undefined');
       }
     });
 
     ws.onError((e: any) => {
-      console.log(`ws error: ${e}`);
+      log.error(`ws error: `, e);
     });
 
     ws.onClose((e: any) => {
-      console.log(`ws closed: ${e}`);
+      log.debug(`ws closed: `, e);
     });
   }
 
@@ -144,7 +146,7 @@ export class Rpc implements Responder {
     } else if (req.navigationRequest) {
       this.handler.handleNavigationRequest(req, req.navigationRequest);
     } else {
-      console.log('msg.request.* undefined');
+      log.error('msg.request.* undefined');
     }
   }
 
@@ -175,10 +177,10 @@ export class Rpc implements Responder {
     } else if (resp.createSessionResponse) {
       ar.callback(resp, resp.createSessionResponse);
     } else if (resp.navigationResponse) {
-      console.log(`navigation response: ${resp.navigationResponse}`);
+      log.debug(`navigation response: `, resp.navigationResponse);
       ar.callback(resp, resp.navigationResponse);
     } else {
-      console.log('msg.response.* undefined');
+      log.error('msg.response.* undefined');
     }
   }
 
