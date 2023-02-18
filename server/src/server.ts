@@ -39,8 +39,8 @@ export class Server {
   private static singleton?: Server;
 
   private wss: WebSocketServer = new WebSocketServer({ host: 'localhost', port: 8080 });
-  private clients: Rpc[] = [];
-  private sessions: Session[] = [];
+  private clients = new Map<number, Rpc>();
+  private sessions = new Map<number, Session>();
   private sessionId: number = 0;
   private clientId: number = 0;
   private tabId: number = 0;
@@ -54,7 +54,7 @@ export class Server {
       this.clientId++;
       const client = new Rpc(new Handler(this.clientId, this), new ServerWebSocket(ws));
       log.debug('connected');
-      this.clients[this.clientId] = client;
+      this.clients.set(this.clientId, client);
     });
   }
 
@@ -83,10 +83,10 @@ export class Server {
       sessionType: sessionType,
       id: this.sessionId,
     });
-    this.sessions[this.sessionId] = {
+    this.sessions.set(this.sessionId, {
       impl: session,
-      clients: [this.clients[clientId]],
-    };
+      clients: [this.clients.get(clientId)!],
+    });
     return session;
   }
 
@@ -97,10 +97,8 @@ export class Server {
    */
   listSessions(): spb.ISession[] {
     const sessions: spb.ISession[] = [];
-    for (const i in this.sessions) {
-      if (this.sessions.hasOwnProperty(i)) {
-        sessions.push(this.sessions[i].impl);
-      }
+    for (const v of this.sessions.values()) {
+      sessions.push(v.impl);
     }
     return sessions;
   }
@@ -115,7 +113,7 @@ export class Server {
   mergeSession(session: spb.ISession): void {
     // TODO: perform some sort of intelligent merge, instead of just setting the session directly.
     // We'll also need to push the changes to all connected clients.
-    this.sessions[session.id!].impl = session;
+    this.sessions.get(session.id!)!.impl = session;
   }
 
   /**
@@ -126,8 +124,8 @@ export class Server {
    * @return {spb.ISession} The session with ID |sessionId|.
    */
   connectToSession(clientId: number, sessionId: number): spb.ISession {
-    this.sessions[sessionId].clients[clientId] = this.clients[clientId];
-    return this.sessions[sessionId].impl;
+    this.sessions.get(sessionId)!.clients[clientId] = this.clients.get(clientId)!;
+    return this.sessions.get(sessionId)!.impl;
   }
 
   /**
@@ -137,7 +135,7 @@ export class Server {
    * @param {number} sessionId The ID of the session to disconnect from.
    */
   disconnectFromSession(clientId: number, sessionId: number): void {
-    delete this.sessions[sessionId].clients[clientId];
+    delete this.sessions.get(sessionId)!.clients[clientId];
   }
 
   /**
@@ -153,7 +151,7 @@ export class Server {
       id: this.tabId,
       sessionId: sessionId,
     });
-    this.sessions[sessionId].impl.tabs?.push(tab);
+    this.sessions.get(sessionId)!.impl.tabs?.push(tab);
     return tab;
   }
 
@@ -165,6 +163,6 @@ export class Server {
    */
   closeTab(sessionId: number, tabId: number): void {
     // TODO: broadcast update to all connected clients.
-    delete this.sessions[sessionId].impl.tabs![tabId];
+    delete this.sessions.get(sessionId)!.impl.tabs![tabId];
   }
 }

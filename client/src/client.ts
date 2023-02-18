@@ -39,11 +39,11 @@ export class Client {
 
   private server?: Rpc;
 
-  // Sparse array of session ID -> session
-  private sessions: Session[] = [];
+  // session ID -> session
+  private sessions = new Map<number, Session>();
 
-  // Sparse array of window ID -> session
-  private windows: Session[] = [];
+  // window ID -> session
+  private windows = new Map<number, Session>();
 
   /**
    * Creates a Client.
@@ -79,7 +79,7 @@ export class Client {
     // TODO: don't do this if the window isn't connected to a session
     const req = rpcpb.Request.create({
       openTabRequest: {
-        sessionId: this.windows[windowId!].impl.id,
+        sessionId: this.windows.get(windowId!)!.impl.id,
       },
     });
     // TODO: here and maybe elsewhere, ignore when tab ID is chrome.tabs.TAB_ID_NONE
@@ -139,7 +139,7 @@ export class Client {
 
     const req = rpcpb.Request.create({
       closeTabRequest: {
-        sessionId: this.windows[windowId!].impl.id,
+        sessionId: this.windows.get(windowId!)!.impl.id,
         tabId: tabId,
       },
     });
@@ -208,7 +208,7 @@ export class Client {
         break;
 
       case 'disconn':
-        const id = this.windows[windowId!].impl.id;
+        const id = this.windows.get(windowId!)!.impl.id;
         this.server!.sendRequest(rpcpb.Request.create({
           disconnectFromSessionRequest: {
             id: id,
@@ -216,11 +216,11 @@ export class Client {
         }), (resp: rpcpb.IResponse, subResp: rpcpb.IDisconnectFromSessionResponse) => {
           log.debug(`disconnect response: `, resp);
         });
-        delete this.windows[windowId!];
+        this.windows.delete(windowId!);
 
         // TODO: we shouldn't actually delete the session if there are other windows still
         // connected to it
-        delete this.sessions[id!];
+        this.sessions.delete(id!);
         break;
     }
   }
@@ -257,11 +257,11 @@ export class Client {
       subResp: rpcpb.ICreateSessionResponse, windowId: number) {
     log.debug(`createSession response: `, resp);
 
-    this.windows[windowId!] = {
+    this.windows.set(windowId!, {
       impl: subResp.session!,
       server: this.server!,
-    };
-    this.sessions[subResp.session!.id!] = this.windows[windowId!];
+    });
+    this.sessions.set(subResp.session!.id!, this.windows.get(windowId!)!);
 
     const tabs = await chrome.tabs.query({});
     const req = rpcpb.Request.create({
@@ -298,11 +298,11 @@ export class Client {
       subResp: rpcpb.IConnectToSessionResponse, windowId: number) {
     log.debug(`connectToSession response: `, resp);
 
-    this.windows[windowId] = {
+    this.windows.set(windowId, {
       impl: subResp.session!,
       server: this.server!,
-    };
-    this.sessions[subResp.session!.id!] = this.windows[windowId];
+    });
+    this.sessions.set(subResp.session!.id!, this.windows.get(windowId)!);
 
     for (const t of subResp.session!.tabs!) {
       chrome.tabs.create({

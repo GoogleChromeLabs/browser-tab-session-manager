@@ -73,8 +73,7 @@ type AwaitedResponse = {
  * message types with their corresponding handler and callback functions.
  */
 export class Rpc implements Responder {
-  // Note: |awaitedResponses| is a sparse array.
-  private awaitedResponses: AwaitedResponse[] = [];
+  private awaitedResponses = new Map<number, AwaitedResponse>();
   private messageId: number = 0;
   private requestId: number = 0;
 
@@ -156,11 +155,11 @@ export class Rpc implements Responder {
    * @param {rpcpb.IResponse} resp The incoming response RPC.
    */
   private handleResponse(resp: rpcpb.IResponse): void {
-    const ar = this.awaitedResponses[resp.responseId as number];
+    const ar = this.awaitedResponses.get(resp.responseId!);
     if (!ar) {
       return;
     }
-    delete this.awaitedResponses[resp.responseId as number];
+    this.awaitedResponses.delete(resp.responseId!);
 
     if (resp.listSessionsResponse) {
       ar.callback(resp, resp.listSessionsResponse);
@@ -203,11 +202,11 @@ export class Rpc implements Responder {
     this.ws.send(JSON.stringify(msg.toJSON())); // TODO: ensure this.ws is connected?
 
     if (callback) {
-      this.awaitedResponses[req.requestId] = {
+      this.awaitedResponses.set(req.requestId, {
         messageId: msg.messageId,
         request: req,
         callback: callback,
-      };
+      });
     }
   }
 
