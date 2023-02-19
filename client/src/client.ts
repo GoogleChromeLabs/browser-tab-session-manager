@@ -21,6 +21,7 @@ import { log } from './shared/logger.js';
 import { Rpc } from './shared/rpc.js';
 import { Handler } from './rpc_handler.js';
 import { ClientWebSocket } from './cws.js';
+import { TabIdMappings } from './tab_id_mapping.js';
 
 /**
  * A session proto object plus the corresponding server.
@@ -44,6 +45,8 @@ export class Client {
 
   // window ID -> session
   private windows = new Map<number, Session>();
+
+  private localToRemoteTabIds = new TabIdMappings();
 
   /**
    * Creates a Client.
@@ -74,7 +77,7 @@ export class Client {
   async onTabCreated(tab: chrome.tabs.Tab) {
     const windowId = (await chrome.windows.getCurrent()).id;
 
-    log.debug(`tab created (tab ${tab.id}, window ${windowId})`);
+    log.debug(`tab created (tab local id ${tab.id}, window ${windowId})`);
 
     // TODO: don't do this if the window isn't connected to a session
     const req = rpcpb.Request.create({
@@ -83,20 +86,23 @@ export class Client {
       },
     });
     // TODO: here and maybe elsewhere, ignore when tab ID is chrome.tabs.TAB_ID_NONE
-    this.server!.sendRequest(req, null);
+    this.server!.sendRequest(req, (resp: rpcpb.IResponse, subResp: rpcpb.IOpenTabResponse) => {
+      log.debug(`open tab response for local tab id ${tab.id}: `, resp);
+      this.localToRemoteTabIds.add(tab.id!, subResp.tab!.id!);
+    });
   }
 
   /**
    * Called when a tab is 'attached' to a new window (from a drag-and-drop action).
    *
-   * @param {number} tabId The unique ID for the attached tab.
+   * @param {number} localTabId The unique local ID for the attached tab.
    * @param {chrome.tabs.TabAttachInfo} attachInfo Extra event info from Chrome.
    */
-  async onTabAttached(tabId: number, attachInfo: chrome.tabs.TabAttachInfo) {
+  async onTabAttached(localTabId: number, attachInfo: chrome.tabs.TabAttachInfo) {
     const windowId = (await chrome.windows.getCurrent()).id;
 
-    log.debug(`tab attached at position ${attachInfo.newPosition} (tab ${tabId}, window ` +
-      `${windowId} =? ${attachInfo.newWindowId})`);
+    log.debug(`tab attached at position ${attachInfo.newPosition} (tab local id ${localTabId}, ` +
+      `window ${windowId} =? ${attachInfo.newWindowId})`);
 
     // In this case we may need to send both 'created' and 'navigated' events to the server? Or
     // else add a new RPC.
@@ -108,16 +114,16 @@ export class Client {
   /**
    * Called when a tab is 'detached' from a new window (from a drag-and-drop action).
    *
-   * @param {number} tabId The unique ID for the detached tab.
+   * @param {number} localTabId The unique local ID for the detached tab.
    * @param {chrome.tabs.TabDetachInfo} detachInfo Extra event info from Chrome.
    */
-  async onTabDetached(tabId: number, detachInfo: chrome.tabs.TabDetachInfo) {
+  async onTabDetached(localTabId: number, detachInfo: chrome.tabs.TabDetachInfo) {
     const windowId = (await chrome.windows.getCurrent()).id;
 
-    log.debug(`tab detached (tab ${tabId}, window ${windowId})`);
+    log.debug(`tab detached (tab local id ${localTabId}, window ${windowId})`);
 
     // Detaching from a window will mean being removed from the session.
-    this.onTabRemoved(tabId, {
+    this.onTabRemoved(localTabId, {
       windowId: detachInfo.oldWindowId,
       isWindowClosing: false,
     });
@@ -126,21 +132,24 @@ export class Client {
   /**
    * Called when a tab is closed.
    *
-   * @param {number} tabId The unique ID that belonged to the now-closed tab.
+   * @param {number} localTabId The unique local ID that belonged to the now-closed tab.
    * @param {chrome.tabs.TabRemoveInfo} removeInfo Extra event info from Chrome.
    */
-  async onTabRemoved(tabId: number, removeInfo: chrome.tabs.TabRemoveInfo) {
+  async onTabRemoved(localTabId: number, removeInfo: chrome.tabs.TabRemoveInfo) {
     const windowId = removeInfo.windowId;
 
     // If removeInfo.isWindowClosing is true, then we would want to delete the session.
 
-    log.debug(`tab removed (tab ${tabId}, window ${windowId}) - isWindowClosing: ` +
+    log.debug(`tab removed (tab local id ${localTabId}, window ${windowId}) - isWindowClosing: ` +
       `${removeInfo.isWindowClosing}`);
+
+    const remoteTabId = this.localToRemoteTabIds.getRemote(localTabId);
+    log.debug(`local tab id ${localTabId} corresponds to remote tab id ${remoteTabId}`);
 
     const req = rpcpb.Request.create({
       closeTabRequest: {
         sessionId: this.windows.get(windowId!)!.impl.id,
-        tabId: tabId,
+        tabId: remoteTabId,
       },
     });
     this.server!.sendRequest(req, null);
@@ -149,28 +158,28 @@ export class Client {
   /**
    * Called when a tab is moved within the same window.
    *
-   * @param {number} tabId The unique ID for the moved tab.
+   * @param {number} localTabId The unique local ID for the moved tab.
    * @param {chrome.tabs.TabMoveInfo} moveInfo Extra event info from Chrome.
    */
-  async onTabMoved(tabId: number, moveInfo: chrome.tabs.TabMoveInfo) {
+  async onTabMoved(localTabId: number, moveInfo: chrome.tabs.TabMoveInfo) {
     const windowId = (await chrome.windows.getCurrent()).id;
 
-    log.debug(`tab moved (tab ${tabId}, window ${windowId} =? ${moveInfo.windowId}) - from ` +
-      `index ${moveInfo.fromIndex}, to index ${moveInfo.toIndex}`);
+    log.debug(`tab moved (tab local id ${localTabId}, window ${windowId} =? ` +
+      `${moveInfo.windowId}) - from index ${moveInfo.fromIndex}, to index ${moveInfo.toIndex}`);
   }
 
   /**
    * Called when a tab is 'replaced'. I don't really know when this happens, I'll have to check
    * the docs.
    *
-   * @param {number} addedTabId The unique ID for the new tab.
-   * @param {number} removedTabId The unique ID for the old tab.
+   * @param {number} addedLocalTabId The unique local ID for the new tab.
+   * @param {number} removedLocalTabId The unique local ID for the old tab.
    */
-  async onTabReplaced(addedTabId: number, removedTabId: number) {
+  async onTabReplaced(addedLocalTabId: number, removedLocalTabId: number) {
     const windowId = (await chrome.windows.getCurrent()).id;
 
-    log.debug(`tab replaced (old tab ${removedTabId}, new tab ${addedTabId}, ` +
-      `window ${windowId})`);
+    log.debug(`tab replaced (old tab local id ${removedLocalTabId}, new tab local id ` +
+      `${addedLocalTabId}, window ${windowId})`);
   }
 
   /**
@@ -271,7 +280,6 @@ export class Client {
           id: subResp.session!.id,
           tabs: tabs.map((tab) => {
             return spb.Tab.create({
-              id: tab.id,
               url: tab.url,
               sessionId: subResp.session!.id,
             });

@@ -41,6 +41,8 @@ export class Server {
   private wss: WebSocketServer = new WebSocketServer({ host: 'localhost', port: 8080 });
   private clients = new Map<number, Rpc>();
   private sessions = new Map<number, Session>();
+
+  // valid IDs start at 1.
   private sessionId: number = 0;
   private clientId: number = 0;
   private tabId: number = 0;
@@ -113,6 +115,14 @@ export class Server {
   mergeSession(session: spb.ISession): void {
     // TODO: perform some sort of intelligent merge, instead of just setting the session directly.
     // We'll also need to push the changes to all connected clients.
+
+    for (const tab of session.tabs!) {
+      if (tab.id === undefined || tab.id === null || tab.id === 0) {
+        this.tabId++;
+        tab.id = this.tabId;
+      }
+    }
+
     this.sessions.get(session.id!)!.impl = session;
   }
 
