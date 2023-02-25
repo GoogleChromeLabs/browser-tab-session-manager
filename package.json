@@ -10,7 +10,8 @@
     "buildserver": "./buildserver.sh",
     "fix": "eslint --fix './**/*.ts'",
     "lint": "eslint './**/*.ts'",
-    "serve": "./serve.sh"
+    "serve": "./serve.sh",
+    "test": "./testclient.sh && ./testserver.sh"
   },
   "engines": {
     "node": ">=16",
@@ -29,6 +30,7 @@
     "ws": "^8.11.0"
   },
   "devDependencies": {
+    "@jest/globals": "^29.4.3",
     "@types/ws": "^8.5.4",
     "@typescript-eslint/eslint-plugin": "^5.48.0",
     "@typescript-eslint/parser": "^5.48.0",
@@ -36,7 +38,9 @@
     "eslint": "^8.31.0",
     "eslint-config-google": "^0.14.0",
     "esmify": "^2.1.1",
+    "jest": "^29.4.3",
     "protobufjs-cli": "^1.0.2",
+    "ts-jest": "^29.0.5",
     "typescript": "^4.9.4"
   }
 }
