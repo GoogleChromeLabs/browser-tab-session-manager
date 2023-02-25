@@ -65,9 +65,9 @@ export class TabIdMappings {
    */
   remove(local: number, remote: number) {
     this.localToRemote.delete(local);
-        this.remoteToLocals.get(remote)!.delete(local);
-        if (this.remoteToLocals.get(remote)!.size === 0) {
-          this.remoteToLocals.delete(remote);
-        }
+    this.remoteToLocals.get(remote)!.delete(local);
+    if (this.remoteToLocals.get(remote)!.size === 0) {
+      this.remoteToLocals.delete(remote);
+    }
   }
 }
